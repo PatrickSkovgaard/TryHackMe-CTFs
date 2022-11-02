@@ -1,0 +1,144 @@
+# Overpass CTF
+
+### Tasks: 
+- Hack into the machine and get the *user.txt* flag 
+- Escalate privileges and get the *root.txt* flag
+
+<br>
+
+### Step 1 - Recon
+Since we're given an IP address of the target, let's use nmap to scan it and see if any ports are open:
+
+``nmap -sV 10.10.192.255 -v``
+
+And from the output, we can see that there are two ports open on the target machine. Port 22 (SSH) and 80 (HTTP):
+
+![billede](https://user-images.githubusercontent.com/78546461/199543842-ef5db06d-bfb8-4c49-b94b-b6ec8292797d.png)
+
+<br>
+
+Since we don't have any idea of a username or password, the best thing to do here is to check out the webpage, on port 80.
+
+![billede](https://user-images.githubusercontent.com/78546461/199544761-64cfaf7b-8612-4d88-85f8-fa42d42f7e76.png)
+
+So the webpage is for a password manager. Well, we can obviously see that there is an *About Us* and a *Downloads* page, but perhaps there could be other pages as well. 
+
+Before we check, let's see if the page source has anything of interest to offer.
+
+![billede](https://user-images.githubusercontent.com/78546461/199545395-f5ea6101-e0fb-4fb6-bbff-03b07d96ee58.png)
+
+Aha. So this alleged *Military Grade Encryption* is probably not what it sounds like. 
+
+Based on the *Romans used it* part, my guess would be that they have used the *Caesar Cipher* as their encryption for the passwords. 
+
+<br>
+
+Anyway, let's scan the website with gobuster and see if there are other pages of interest:
+
+``gobuster dir -u http://10.10.192.255 -w /usr/share/wordlists/dirb/common.txt``
+
+This reveals that there are a couple more pages, which we didn't know about. 
+
+However, there is only one page in particular that stands out as interesting, and that is the */admin* page. 
+
+![billede](https://user-images.githubusercontent.com/78546461/199546875-051aecb3-4803-4ce2-ae56-46ddff3bf365.png)
+
+<br>
+
+Let's check it out:
+
+![billede](https://user-images.githubusercontent.com/78546461/199547839-e1a230db-06c5-4535-a803-0b7fccb399c2.png)
+
+<br>
+
+Well, well, well. A login page. Let's try putting admin for both username and password:
+
+![billede](https://user-images.githubusercontent.com/78546461/199548259-f85768dc-95c4-499d-adee-e8b54061b8d4.png)
+
+<br>
+
+Hmm.. We could always try brute forcing the login with hydra, but let's first see if there's anything of interest, using the developer tools:
+
+![billede](https://user-images.githubusercontent.com/78546461/199548648-14915b36-9727-4241-af26-eff045204385.png)
+
+So we have a JavaScript file for cookie and one for login. Alright, that might be something.
+
+It doesn't seem like cookie.js is of much use, as it is just a long line of text, which might be auto-generated. 
+
+login.js on the other hand, has some interesting information to offer. It seems like it will set a cookie if the credentials are not incorrect.
+
+![billede](https://user-images.githubusercontent.com/78546461/199549814-2f06f479-fddc-4cfb-8afa-337e6b9a21d1.png)
+
+<br>
+
+Let's try that out for ourselves, in the console:
+
+![billede](https://user-images.githubusercontent.com/78546461/199549975-d57c47db-05d6-488e-b714-7f290afa6e88.png)
+
+<br>
+
+And then refresh the page..
+
+Aaand, we're in. And apparently there's some real valuable information on the very first page!
+
+![billede](https://user-images.githubusercontent.com/78546461/199550652-b23e8cd8-329f-455e-9631-c441705d626d.png)
+
+<br>
+
+So, it seems like we have a potential username, if not two. But James seems like the lesser smart person here, so let's focus on him. 
+
+We have his RSA Private Key right here on the page, so let's copy that into a new file and call it *id_rsa*.
+
+And then try to login using the RSA key, through SSH with username james:
+
+``ssh james@10.10.192.255 -i id_rsa``
+
+![billede](https://user-images.githubusercontent.com/78546461/199551799-411463f7-7d38-4eee-81ef-0f77fa220fe1.png)
+
+<br>
+
+Hmm.. It wants a passphrase for the key file. Which we don't have. 
+
+Let's try using ssh2john.py to see if we can get anything out of the RSA key:
+
+``/opt/john/ssh2john.py``
+
+<br>
+
+This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old *rockyou.txt*:
+
+But first, I'll save the output to a new file and call it *john_rsa*.
+
+Now, let's give it a go with john:
+
+``john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa``
+
+![billede](https://user-images.githubusercontent.com/78546461/199553339-4af8e119-4c0d-49b2-a7f0-8b6c577c3337.png)
+
+<br>
+
+Well, that was easy. So the passphrase should be *james13*. Let's try it out:
+
+``ssh james@10.10.192.255 -i id_rsa`` 
+
+![billede](https://user-images.githubusercontent.com/78546461/199553845-2c1ebd9a-4b21-47a9-8280-5cddef48f86c.png)
+
+![billede](https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png)
+
+<br>
+
+There we go. We're in! Now, let's find a flag.
+
+``ls`` 
+
+![billede](https://user-images.githubusercontent.com/78546461/199554136-55d814d0-4a64-4bc4-a709-62597ba22a53.png)
+
+<br>
+
+There we have our user.txt. 
+
+![billede](https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png)
+
+<br><br>
+
+Nice. Now, let's get the root flag.
