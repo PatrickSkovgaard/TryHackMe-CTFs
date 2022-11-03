@@ -1,172 +1,186 @@
-<h1>Overpass CTF</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overpass CTF</title>
+</head>
+<body>
 
-<h3>Tasks:</h3>
+  <h1>Overpass CTF</h1>
 
-<ul>
-  <li>Hack into the machine and get the *user.txt* flag</li> 
-  <li>Escalate privileges and get the *root.txt* flag</li>
-</ul>
+  <h3>Tasks:</h3>
 
-<h3>Step 1 - Recon</h3>
-<p>Since we're given an IP address of the target, let's use nmap to scan it and see if any ports are open:</p>
+  <ul>
+    <li>Hack into the machine and get the *user.txt* flag</li> 
+    <li>Escalate privileges and get the *root.txt* flag</li>
+  </ul>
 
-<code>nmap -sV 10.10.192.255 -v</code>
+  <h3>Step 1 - Recon</h3>
+  <p>Since we're given an IP address of the target, let's use nmap to scan it and see if any ports are open:</p>
 
-<br>
+  <code>nmap -sV 10.10.192.255 -v</code>
 
-<p>And from the output, we can see that there are two ports open on the target machine. Port 22 (SSH) and 80 (HTTP):</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199543842-ef5db06d-bfb8-4c49-b94b-b6ec8292797d.png">
+  <p>And from the output, we can see that there are two ports open on the target machine. Port 22 (SSH) and 80 (HTTP):</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199543842-ef5db06d-bfb8-4c49-b94b-b6ec8292797d.png">
 
-<p>Since we don't have any idea of a username or password, the best thing to do here is to check out the webpage, on port 80.</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199544761-64cfaf7b-8612-4d88-85f8-fa42d42f7e76.png">
+  <p>Since we don't have any idea of a username or password, the best thing to do here is to check out the webpage, on port 80.</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199544761-64cfaf7b-8612-4d88-85f8-fa42d42f7e76.png">
 
-<p>So the webpage is for a password manager. Well, we can obviously see that there is an *About Us* and a *Downloads* page, but perhaps there could be other pages as well.</p> 
+  <br>
 
-<p>Before we check, let's see if the page source has anything of interest to offer.</p>
+  <p>So the webpage is for a password manager. Well, we can obviously see that there is an *About Us* and a *Downloads* page, but perhaps there could be other pages as well.</p> 
 
-<img src="https://user-images.githubusercontent.com/78546461/199545395-f5ea6101-e0fb-4fb6-bbff-03b07d96ee58.png">
+  <p>Before we check, let's see if the page source has anything of interest to offer.</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199545395-f5ea6101-e0fb-4fb6-bbff-03b07d96ee58.png">
 
-<p>Aha. So this alleged *Military Grade Encryption* is probably not what it sounds like.</p> 
+  <br>
 
+  <p>Aha. So this alleged *Military Grade Encryption* is probably not what it sounds like.</p> 
 
-<p>Based on the *Romans used it* part, my guess would be that they have used the *Caesar Cipher* as their encryption for the passwords.</p>
 
-<br>
+  <p>Based on the *Romans used it* part, my guess would be that they have used the *Caesar Cipher* as their encryption for the passwords.</p>
 
-<p>Anyway, let's scan the website with gobuster and see if there are other pages of interest:</p>
+  <br>
 
-<code>gobuster dir -u http://10.10.192.255 -w /usr/share/wordlists/dirb/common.txt</code>
+  <p>Anyway, let's scan the website with gobuster and see if there are other pages of interest:</p>
 
-<br>
+  <code>gobuster dir -u http://10.10.192.255 -w /usr/share/wordlists/dirb/common.txt</code>
 
-<p>This reveals that there are a couple more pages, which we didn't know about. </p>
+  <br>
 
-<p>However, there is only one page in particular that stands out as interesting, and that is the <strong>/admin</strong> page.</p>
+  <p>This reveals that there are a couple more pages, which we didn't know about. </p>
 
-<img src="https://user-images.githubusercontent.com/78546461/199546875-051aecb3-4803-4ce2-ae56-46ddff3bf365.png">
+  <p>However, there is only one page in particular that stands out as interesting, and that is the <strong>/admin</strong> page.</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199546875-051aecb3-4803-4ce2-ae56-46ddff3bf365.png">
 
-<p>Let's check it out:</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199547839-e1a230db-06c5-4535-a803-0b7fccb399c2.png">
+  <p>Let's check it out:</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199547839-e1a230db-06c5-4535-a803-0b7fccb399c2.png">
 
-<p>Well, well, well. A login page. Let's try putting admin for both username and password:</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199548259-f85768dc-95c4-499d-adee-e8b54061b8d4.png">
+  <p>Well, well, well. A login page. Let's try putting admin for both username and password:</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199548259-f85768dc-95c4-499d-adee-e8b54061b8d4.png">
 
-<p>Hmm.. We could always try brute forcing the login with hydra, but let's first see if there's anything of interest, using the developer tools:</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199548648-14915b36-9727-4241-af26-eff045204385.png">
+  <p>Hmm.. We could always try brute forcing the login with hydra, but let's first see if there's anything of interest, using the developer tools:</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199548648-14915b36-9727-4241-af26-eff045204385.png">
 
-<p>So we have a JavaScript file for cookie and one for login. Alright, that might be something.</p>
+  <br>
 
-<p>It doesn't seem like cookie.js is of much use, as it is just a long line of text, which might be auto-generated.</p>
+  <p>So we have a JavaScript file for cookie and one for login. Alright, that might be something.</p>
 
-<br>
+  <p>It doesn't seem like cookie.js is of much use, as it is just a long line of text, which might be auto-generated.</p>
 
-<p>login.js on the other hand, has some interesting information to offer. It seems like it will set a cookie if the credentials are not incorrect.</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199549814-2f06f479-fddc-4cfb-8afa-337e6b9a21d1.png">
+  <p>login.js on the other hand, has some interesting information to offer. It seems like it will set a cookie if the credentials are not incorrect.</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199549814-2f06f479-fddc-4cfb-8afa-337e6b9a21d1.png">
 
-<p>Let's try that out for ourselves, in the console:</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199549975-d57c47db-05d6-488e-b714-7f290afa6e88.png">
+  <p>Let's try that out for ourselves, in the console:</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199549975-d57c47db-05d6-488e-b714-7f290afa6e88.png">
 
-<p>And then refresh the page..</p>
+  <br>
 
-<p>Aaand, we're in. And apparently there's some real valuable information on the very first page!</p>
+  <p>And then refresh the page..</p>
 
-<img src="https://user-images.githubusercontent.com/78546461/199550652-b23e8cd8-329f-455e-9631-c441705d626d.png">
+  <p>Aaand, we're in. And apparently there's some real valuable information on the very first page!</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199550652-b23e8cd8-329f-455e-9631-c441705d626d.png">
 
-<p>So, it seems like we have a potential username, if not two. But James seems like the lesser smart person here, so let's focus on him.</p>
+  <br>
 
-<p>We have his RSA Private Key right here on the page, so let's copy that into a new file and call it <strong>id_rsa</strong>.</p>
+  <p>So, it seems like we have a potential username, if not two. But James seems like the lesser smart person here, so let's focus on him.</p>
 
-<br>
+  <p>We have his RSA Private Key right here on the page, so let's copy that into a new file and call it <strong>id_rsa</strong>.</p>
 
-<p>And then try to login using the RSA key, through SSH with username james:</p>
+  <br>
 
-<code>ssh james@10.10.192.255 -i id_rsa</code>
+  <p>And then try to login using the RSA key, through SSH with username james:</p>
 
-<br><br>
+  <code>ssh james@10.10.192.255 -i id_rsa</code>
 
-<img src="https://user-images.githubusercontent.com/78546461/199551799-411463f7-7d38-4eee-81ef-0f77fa220fe1.png">
+  <br><br>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199551799-411463f7-7d38-4eee-81ef-0f77fa220fe1.png">
 
-<p>Hmm.. It wants a passphrase for the key file. Which we don't have.</p> 
+  <br>
 
-<p>Let's try using ssh2john.py to see if we can get anything out of the RSA key:</p>
+  <p>Hmm.. It wants a passphrase for the key file. Which we don't have.</p> 
 
-<code>/opt/john/ssh2john.py</code>
+  <p>Let's try using ssh2john.py to see if we can get anything out of the RSA key:</p>
 
-<br>
+  <code>/opt/john/ssh2john.py</code>
 
-<p>This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old *rockyou.txt*:</p>
+  <br>
 
-<p>But first, I'll save the output to a new file and call it *john_rsa*.</p>
+  <p>This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old *rockyou.txt*:</p>
 
-<br>
+  <p>But first, I'll save the output to a new file and call it *john_rsa*.</p>
 
-<p>Now, let's give it a go with john:</p>
+  <br>
 
-<code>john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa</code>
+  <p>Now, let's give it a go with john:</p>
 
-<br><br>
+  <code>john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa</code>
 
-<img src="https://user-images.githubusercontent.com/78546461/199553339-4af8e119-4c0d-49b2-a7f0-8b6c577c3337.png">
+  <br><br>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199553339-4af8e119-4c0d-49b2-a7f0-8b6c577c3337.png">
 
-<p>Well, that was easy. So the passphrase should be *james13*. Let's try it out:</p>
+  <br>
 
-<code>ssh james@10.10.192.255 -i id_rsa</code> 
+  <p>Well, that was easy. So the passphrase should be *james13*. Let's try it out:</p>
 
-<br><br>
+  <code>ssh james@10.10.192.255 -i id_rsa</code> 
 
-<img src="https://user-images.githubusercontent.com/78546461/199553845-2c1ebd9a-4b21-47a9-8280-5cddef48f86c.png">
+  <br><br>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199553845-2c1ebd9a-4b21-47a9-8280-5cddef48f86c.png">
 
-<img src="https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png">
+  <br>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png">
 
-<p>There we go. We're in! Now, let's find a flag.</p>
+  <br>
 
-<code>ls</code>
+  <p>There we go. We're in! Now, let's find a flag.</p>
 
-<br><br>
+  <code>ls</code>
 
-<img src="https://user-images.githubusercontent.com/78546461/199554136-55d814d0-4a64-4bc4-a709-62597ba22a53.png">
+  <br><br>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199554136-55d814d0-4a64-4bc4-a709-62597ba22a53.png">
 
-<p>There we have our user.txt.</p>
+  <br>
 
-<img src="https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png">
+  <p>There we have our user.txt.</p>
 
-<br>
+  <img src="https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png">
 
-<p>Nice. Now, let's get the root flag.</p>
+  <br>
+
+  <p>Nice. Now, let's get the root flag.</p>
+
+
+</body>
+</html>
