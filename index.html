@@ -92,48 +92,44 @@
 <img src="https://user-images.githubusercontent.com/78546461/199551799-411463f7-7d38-4eee-81ef-0f77fa220fe1.png">
 
 
-Hmm.. It wants a passphrase for the key file. Which we don't have. 
+<p>Hmm.. It wants a passphrase for the key file. Which we don't have.</p> 
 
-Let's try using ssh2john.py to see if we can get anything out of the RSA key:
+<p>Let's try using ssh2john.py to see if we can get anything out of the RSA key:</p>
 
-``/opt/john/ssh2john.py``
+<code>/opt/john/ssh2john.py</code>
+
+
+<p>This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old *rockyou.txt*:</p>
+
+<p>But first, I'll save the output to a new file and call it *john_rsa*.</p>
+
+<p>Now, let's give it a go with john:</p>
+
+<code>john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa</code>
+
+<img src="https://user-images.githubusercontent.com/78546461/199553339-4af8e119-4c0d-49b2-a7f0-8b6c577c3337.png">
+
+
+<p>Well, that was easy. So the passphrase should be *james13*. Let's try it out:</p>
+
+<code>ssh james@10.10.192.255 -i id_rsa</code> 
+
+<img src="https://user-images.githubusercontent.com/78546461/199553845-2c1ebd9a-4b21-47a9-8280-5cddef48f86c.png">
+
+<img src="https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png">
+
+
+<p>There we go. We're in! Now, let's find a flag.</p>
+
+<code>ls</code>
+
+<img src="https://user-images.githubusercontent.com/78546461/199554136-55d814d0-4a64-4bc4-a709-62597ba22a53.png">
+
+
+<p>There we have our user.txt.</p>
+
+<img src="https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png">
 
 <br>
 
-This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old *rockyou.txt*:
-
-But first, I'll save the output to a new file and call it *john_rsa*.
-
-Now, let's give it a go with john:
-
-``john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa``
-
-![billede](https://user-images.githubusercontent.com/78546461/199553339-4af8e119-4c0d-49b2-a7f0-8b6c577c3337.png)
-
-<br>
-
-Well, that was easy. So the passphrase should be *james13*. Let's try it out:
-
-``ssh james@10.10.192.255 -i id_rsa`` 
-
-![billede](https://user-images.githubusercontent.com/78546461/199553845-2c1ebd9a-4b21-47a9-8280-5cddef48f86c.png)
-
-![billede](https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png)
-
-<br>
-
-There we go. We're in! Now, let's find a flag.
-
-``ls`` 
-
-![billede](https://user-images.githubusercontent.com/78546461/199554136-55d814d0-4a64-4bc4-a709-62597ba22a53.png)
-
-<br>
-
-There we have our user.txt. 
-
-![billede](https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png)
-
-<br><br>
-
-Nice. Now, let's get the root flag.
+<p>Nice. Now, let's get the root flag.</p>
