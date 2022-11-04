@@ -17,6 +17,8 @@ And from the output, we can see that there are two ports open on the target mach
 
 <br>
 
+### Step 2 - Finding a way in
+
 Since we don't have any idea of a username or password, the best thing to do here is to check out the webpage, on port 80.
 
 ![billede](https://user-images.githubusercontent.com/78546461/199544761-64cfaf7b-8612-4d88-85f8-fa42d42f7e76.png)
@@ -125,6 +127,10 @@ Well, that was easy. So the passphrase should be *james13*. Let's try it out:
 
 ![billede](https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png)
 
+<br><br>
+
+### User flag
+
 <br>
 
 There we go. We're in! Now, let's find a flag.
@@ -142,3 +148,24 @@ There we have our user.txt.
 <br><br>
 
 Nice. Now, let's get the root flag.
+
+<br>
+
+### Root flag
+
+<br>
+
+Now, to make life a little easy, let's try to get an enumeration tool, such as linpeas onto the target machine.
+
+Note: linpeas, as well as winpeas, can be downloaded from the official author's GitHub page: https://github.com/carlospolop/PEASS-ng 
+
+First, I'll open up a http server with python on my host machine, in the directory where linpeas.sh is:
+
+<br>
+
+``python3 -m http.server 4444``
+
+<br>
+
+And then, on the target machine, I'll use wget to download the linpeas.sh file. This will only work in a directory where 
+
