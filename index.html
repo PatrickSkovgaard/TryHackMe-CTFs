@@ -128,7 +128,7 @@
 
     <br><br>
 
-    <p>This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old *rockyou.txt*:</p>
+    <p>This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old <i>rockyou.txt</i>:</p>
 
     <p>But first, I'll save the output to a new file and call it <i>john_rsa</i>.</p>
 
@@ -186,7 +186,7 @@
 
     <p>Now, to make life a little easy, let's try to get an enumeration tool, such as linpeas onto the target machine.</p>
 
-    <p><i>Note: linpeas can be installed by using the command</i> <code>sudo apt install peass</code>, <i>which will also install other tools alongside it. You can then type</i> <code>linpeas</code><i>into the terminal and you should be directed into the directory where linpeas.sh is.</i></p>
+    <p><i>Note: linpeas can be installed by using the command</i> <code>sudo apt install peass</code>, <i>which will also install other tools alongside it. You can then type</i> <code>linpeas</code><i> into the terminal and you should be directed into the directory where linpeas.sh is.</i></p>
 
     <br>
 
@@ -292,6 +292,8 @@
 
     <p>BOOM! We are root! Don't mind the error messages, the exploit will still work, as you can see.</p>
 
+    <br>
+
     <p>Now, we don't have an interactive shell, but that can easily be solved with:</p>
 
     <code>/bin/bash</code>
@@ -315,6 +317,8 @@
     <img src="https://user-images.githubusercontent.com/78546461/200057349-7a343073-7523-4303-8696-cb9f59729428.png">
 
     <br><br>
+
+    <h1>Alternative way to get Root Flag</h1>
 
     <h2>This is the most probable way, that TryHackMe actually intended us to use</h2>
 
