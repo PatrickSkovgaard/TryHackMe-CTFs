@@ -347,9 +347,9 @@ So, on our host machine, we can go into the / directory, ``cd /`` and then use t
 
 And then we can write our script, which will be executed by the target, with root privileges. Let's not forget the *#!/bin/bash* at the top of our script:
 
-```#!/bin/bash
-
-  sudo cp /root/root.txt /root.txt && chmod +r /root.txt james```
+``#!/bin/bash``
+``
+``sudo cp /root/root.txt /root.txt && chmod +r /root.txt james``
   
 <br>
 
